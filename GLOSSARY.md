@@ -20,6 +20,14 @@ _Avoid_: modular-monolithic, hybrid kernel, microkernel
 A bounded part of the kernel, such as memory management, the scheduler or a filesystem, that the rest of the kernel may reach only through its declared interface.
 _Avoid_: component, module (reserved for loadable modules)
 
+**Port**:
+Nova's support for one CPU architecture, as in "the x86-64 port".
+_Avoid_: target, platform, arch
+
+**x86-64**:
+The 64-bit x86 architecture. Written x86-64 in prose and `x86_64` in identifiers such as target triples and directory names.
+_Avoid_: x86_64 (in prose), amd64, x64
+
 **Loadable module**:
 A subsystem packaged separately from the kernel image and attached to a running kernel.
 _Avoid_: plugin, extension, driver (when meaning the packaging)
