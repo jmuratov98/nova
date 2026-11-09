@@ -44,6 +44,20 @@ _Avoid_: x86_64 (in prose), amd64, x64
 A subsystem packaged separately from the kernel image and attached to a running kernel.
 _Avoid_: plugin, extension, driver (when meaning the packaging)
 
+## Userland
+
+**Userland**:
+The part of Nova that runs in user mode: its programs and the code they link against.
+_Avoid_: user space, userspace
+
+**init**:
+The first userland program the kernel starts. Every other process descends from it.
+_Avoid_: PID 1 (when meaning the program), init process (when meaning the program)
+
+**Bootstrap runtime**:
+The minimal startup code, system-call wrappers and helpers that userland programs link against until a libc is ported.
+_Avoid_: libc, mini-libc, crt0, rt (in prose)
+
 ## Delivery
 
 **Milestone**:
