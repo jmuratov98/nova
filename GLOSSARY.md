@@ -20,6 +20,10 @@ _Avoid_: modular-monolithic, hybrid kernel, microkernel
 A bounded part of the kernel, such as memory management, the scheduler or a filesystem, that the rest of the kernel may reach only through its declared interface.
 _Avoid_: component, module (reserved for loadable modules)
 
+**Export**:
+A symbol a subsystem makes reachable from other subsystems. Everything a subsystem doesn't export is private to it.
+_Avoid_: public symbol, API (when meaning a single symbol)
+
 **Port**:
 Nova's support for one CPU architecture, as in "the x86-64 port".
 _Avoid_: target, platform, arch
