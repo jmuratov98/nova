@@ -146,6 +146,20 @@ _Avoid_: inode, node, file (when meaning the object rather than an opening of it
 One opening of a vnode, holding its offset and access mode, shared by every file descriptor that refers to it.
 _Avoid_: file description, file object, file (alone)
 
+## Executables
+
+**Executable**:
+The file a program is loaded from: an ELF file holding the program's segments and its entry point.
+_Avoid_: binary, image (alone)
+
+**Segment**:
+A part of an executable, described by one ELF program header, that is placed in memory when the program is loaded.
+_Avoid_: section, region (the address-space side)
+
+**Initial stack**:
+What a program finds at its stack pointer when it starts: its argument count, its arguments, its environment and its auxiliary vector.
+_Avoid_: startup stack, auxv stack
+
 ## Interrupts and time
 
 **Interrupt**:
@@ -175,3 +189,39 @@ _Avoid_: process context
 **Interrupt context**:
 The kernel handling an interrupt. Code in interrupt context can't block, and other interrupts wait until it's done.
 _Avoid_: atomic context, IRQ context
+
+## Console and log
+
+**Console**:
+The device through which Nova talks to whoever is watching it. The kernel log and init's standard input, output and error all go to it.
+_Avoid_: terminal, TTY, serial port (when meaning the console)
+
+**Kernel log**:
+The kernel's account of what it is doing, made of whole lines, each stamped with the time since boot and the subsystem that wrote it.
+_Avoid_: dmesg, printk, kernel messages
+
+**Log sink**:
+An output that the kernel log writes its lines to, such as the console.
+_Avoid_: backend, appender, log device
+
+## Threads
+
+**Thread**:
+The unit of execution the scheduler runs, with a kernel stack of its own. A process runs its program on a thread, but the scheduler knows only threads.
+_Avoid_: task, kthread, process (when meaning what the scheduler runs)
+
+**Context switch**:
+Handing the CPU from one thread to another, saving the first one's registers and restoring the second one's.
+_Avoid_: task switch (x86-64's hardware task switching is something else), reschedule
+
+**Run queue**:
+The threads that are ready to run but aren't running.
+_Avoid_: ready list, ready queue
+
+**Wait queue**:
+The threads blocked until a particular condition may have changed, such as a child exiting.
+_Avoid_: sleep channel, wait channel
+
+**Idle thread**:
+The thread the scheduler runs when no other thread is ready. It's never on the run queue.
+_Avoid_: idle task, idle process, swapper
