@@ -51,3 +51,13 @@ _Avoid_: M1 (fine as shorthand in conversation, but not in specs), MVP, hello wo
 **POSIX conformance**:
 Nova's compatibility target: implementing the POSIX.1-2024 interfaces faithfully enough that unmodified POSIX software builds and runs. It does not mean formal certification.
 _Avoid_: POSIX-compliant, POSIX-certified, POSIX-like
+
+## System calls
+
+**System call**:
+A request from a userland program to the kernel. Written "system call" in prose and `syscall` in identifiers.
+_Avoid_: syscall (in prose), kernel call, trap
+
+**System-call interface**:
+Nova's own set of system calls and the conventions for numbering and invoking them.
+_Avoid_: syscall ABI, kernel API
