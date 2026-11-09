@@ -65,8 +65,12 @@ A named state of Nova that can be tested, described by a spec in the repo, which
 _Avoid_: release, version, phase
 
 **First process tree**:
-Nova's first milestone: the kernel boots, loads `init` from the initial ramdisk, and `init` starts a child process, reaps it and reports its exit status.
+Nova's first milestone: the kernel boots, loads `init` from the initial ramdisk, and `init` runs a child twice, once to exit and once to fault, reaping each and reporting how it ended.
 _Avoid_: M1 (fine as shorthand in conversation, but not in specs), MVP, hello world
+
+**Boot test**:
+An automated test that boots the boot image in QEMU and judges the run by how QEMU exits and by the lines on the serial console.
+_Avoid_: integration test, end-to-end test, smoke test, QEMU test
 
 ## Build
 
