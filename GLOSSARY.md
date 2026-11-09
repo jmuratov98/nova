@@ -25,8 +25,16 @@ A symbol a subsystem makes reachable from other subsystems. Everything a subsyst
 _Avoid_: public symbol, API (when meaning a single symbol)
 
 **Port**:
-Nova's support for one CPU architecture, as in "the x86-64 port".
+The subsystem that implements the port interface for one CPU architecture, as in "the x86-64 port".
 _Avoid_: target, platform, arch
+
+**Port interface**:
+The two-sided contract between the portable kernel and every port: what each port provides, and the few entry points the portable kernel provides to ports.
+_Avoid_: architecture interface
+
+**Portable kernel**:
+The kernel's subsystems other than the port, written once for every architecture.
+_Avoid_: generic kernel, common code
 
 **x86-64**:
 The 64-bit x86 architecture. Written x86-64 in prose and `x86_64` in identifiers such as target triples and directory names.
