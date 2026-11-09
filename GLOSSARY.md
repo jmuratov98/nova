@@ -204,6 +204,10 @@ _Avoid_: dmesg, printk, kernel messages
 An output that the kernel log writes its lines to, such as the console.
 _Avoid_: backend, appender, log device
 
+**Panic**:
+The kernel stopping itself when it finds it can't safely go on: it reports why on every log sink and powers off with the panic outcome.
+_Avoid_: crash, oops, halt (when meaning the whole sequence)
+
 ## Threads
 
 **Thread**:
