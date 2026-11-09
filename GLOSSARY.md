@@ -127,3 +127,47 @@ _Avoid_: HHDM (Limine's own map, used only during boot), physmap, identity map
 **Kernel heap**:
 The kernel's allocator for objects of any size, as opposed to whole frames.
 _Avoid_: kmalloc (in prose), slab (when meaning the whole heap)
+
+## Files
+
+**Initial ramdisk**:
+The archive of userland programs that the bootloader loads alongside the kernel, and that the kernel mounts as its root.
+_Avoid_: initrd, initramfs (the subsystem that reads it), ramdisk (alone)
+
+**Vnode**:
+The kernel's object for one file, directory or device, independent of the filesystem that holds it.
+_Avoid_: inode, node, file (when meaning the object rather than an opening of it)
+
+**Open file**:
+One opening of a vnode, holding its offset and access mode, shared by every file descriptor that refers to it.
+_Avoid_: file description, file object, file (alone)
+
+## Interrupts and time
+
+**Interrupt**:
+An asynchronous event from a device or timer that makes the CPU stop what it's running.
+_Avoid_: IRQ (in prose), exception
+
+**Exception**:
+A synchronous event caused by the instruction the CPU was executing, such as touching unmapped memory or dividing by zero.
+_Avoid_: trap, interrupt
+
+**Fault**:
+An exception that reports an error in the code that was running, such as touching unmapped memory or executing an invalid instruction.
+_Avoid_: crash, segfault (in prose)
+
+**Interrupt line**:
+A numbered input through which a device raises interrupts, independent of how the port routes it to the CPU.
+_Avoid_: IRQ number, vector, GSI
+
+**Tick**:
+The periodic timer interrupt that drives preemption.
+_Avoid_: jiffy, timer interrupt (when meaning the tick)
+
+**Thread context**:
+The kernel running on behalf of a thread, including while it handles a system call or an exception from that thread's program. Code in thread context may block.
+_Avoid_: process context
+
+**Interrupt context**:
+The kernel handling an interrupt. Code in interrupt context can't block, and other interrupts wait until it's done.
+_Avoid_: atomic context, IRQ context
