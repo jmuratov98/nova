@@ -93,3 +93,37 @@ _Avoid_: syscall (in prose), kernel call, trap
 **System-call interface**:
 Nova's own set of system calls and the conventions for numbering and invoking them.
 _Avoid_: syscall ABI, kernel API
+
+## Memory
+
+**Frame**:
+A fixed-size, aligned block of physical memory, the unit in which the kernel hands out physical memory.
+_Avoid_: page (when meaning physical memory), page frame
+
+**Page**:
+A fixed-size, aligned block of virtual memory in an address space, backed by one frame when mapped.
+_Avoid_: frame (when meaning virtual memory)
+
+**Address space**:
+The virtual-to-physical mappings a program runs in: a user half of its own, plus the kernel half.
+_Avoid_: page table (when meaning the whole), memory map, mm
+
+**User half**:
+The lower part of every address space, holding a program's own pages, which user mode may access.
+_Avoid_: user space (when meaning the address range), lower half
+
+**Kernel half**:
+The upper part of every address space, holding the kernel. It is the same in every address space, and user mode can't access it.
+_Avoid_: kernel space (when meaning the address range), higher half
+
+**Region**:
+A contiguous range of pages in an address space's user half, all with the same permissions, such as a program's stack.
+_Avoid_: VMA, mapping, segment (reserved for ELF segments)
+
+**Direct map**:
+The kernel's mapping of all physical RAM at a fixed virtual offset in the kernel half, through which the kernel reaches any frame.
+_Avoid_: HHDM (Limine's own map, used only during boot), physmap, identity map
+
+**Kernel heap**:
+The kernel's allocator for objects of any size, as opposed to whole frames.
+_Avoid_: kmalloc (in prose), slab (when meaning the whole heap)
