@@ -54,6 +54,12 @@ _Avoid_: release, version, phase
 Nova's first milestone: the kernel boots, loads `init` from the initial ramdisk, and `init` starts a child process, reaps it and reports its exit status.
 _Avoid_: M1 (fine as shorthand in conversation, but not in specs), MVP, hello world
 
+## Build
+
+**Boot image**:
+The bootable file the build produces, holding the bootloader, the kernel and the initial ramdisk.
+_Avoid_: ISO, disk image, image (alone)
+
 ## Compatibility
 
 **POSIX conformance**:
