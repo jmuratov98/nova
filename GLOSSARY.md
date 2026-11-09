@@ -65,7 +65,7 @@ A named state of Nova that can be tested, described by a spec in the repo, which
 _Avoid_: release, version, phase
 
 **First process tree**:
-Nova's first milestone: the kernel boots, loads `init` from the initial ramdisk, and `init` runs a child twice, once to exit and once to fault, reaping each and reporting how it ended.
+Nova's first milestone: the kernel boots, loads `init` from the initial ramdisk, and `init` runs `/bin/echo`, then forks a child that exits with a status and one that faults, reaping each and reporting how it ended.
 _Avoid_: M1 (fine as shorthand in conversation, but not in specs), MVP, hello world
 
 **Boot test**:
