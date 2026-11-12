@@ -229,3 +229,41 @@ _Avoid_: sleep channel, wait channel
 **Idle thread**:
 The thread the scheduler runs when no other thread is ready. It's never on the run queue.
 _Avoid_: idle task, idle process, swapper
+
+## Processes
+
+**Process**:
+A program running in its own address space, with its own file descriptors and its place in the process tree. Each process runs on exactly one thread.
+_Avoid_: task, job, program (when meaning the running instance)
+
+**PID**:
+The number that identifies a process from its creation until its parent reaps it.
+_Avoid_: process ID (in identifiers), task ID
+
+**Process tree**:
+The parent and child relationships among processes. init is at the root, and every other process has a parent.
+_Avoid_: process hierarchy
+
+**Orphan**:
+A process whose parent has ended. init adopts it.
+_Avoid_: abandoned process
+
+**Zombie**:
+A process that has ended but hasn't been reaped yet. It keeps only its PID and its wait status.
+_Avoid_: defunct process, dead process
+
+**Reap**:
+For a parent to collect a zombie child's wait status, which ends the child for good and frees its PID.
+_Avoid_: collect, join, wait for (when meaning the collection itself)
+
+**Wait status**:
+How a process ended, as its parent learns it: either the exit status it passed to `_exit`, or the signal it was killed by.
+_Avoid_: exit code (when the process was killed), return code
+
+**File descriptor**:
+A small number by which a process refers to one of its open files.
+_Avoid_: fd (in prose), handle
+
+**Process name**:
+A short label for a process in the kernel log, taken from the last program it executed.
+_Avoid_: comm, command name
