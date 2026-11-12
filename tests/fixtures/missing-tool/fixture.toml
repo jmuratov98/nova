@@ -1,0 +1,3 @@
+description = "a required tool isn't installed, so the build stops before it starts"
+expect = "Cannot build Nova: LD 'ld.lld-not-installed' was not found"
+make_args = ["LD=ld.lld-not-installed"]

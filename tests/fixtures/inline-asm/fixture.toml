@@ -1,0 +1,2 @@
+description = "lib contains inline asm, which only the port may"
+expect = "kernel/lib/pause.c:3: error: inline-asm: '__asm__' is used in portable code"

@@ -1,0 +1,32 @@
+# Per-machine settings. Copy this to config.mk, which git ignores, and keep what you need.
+# Anything given on the command line, as in `gmake kernel CC=clang-23`, wins over this file.
+
+# The tools to build with. Their defaults are on the left, found on PATH. Homebrew's llvm directory
+# is searched last, so on macOS a clang that is already on PATH (Apple's) is the one used.
+#
+#   CC      clang
+#   LD      ld.lld
+#   OBJCOPY llvm-objcopy
+#   NM      llvm-nm
+#   PYTHON  python3
+
+# On Linux, apt.llvm.org installs LLVM 23 with versioned names, so name them here, or put
+# /usr/lib/llvm-23/bin on PATH, where they have their plain names:
+#
+# CC := clang-23
+# LD := ld.lld-23
+# OBJCOPY := llvm-objcopy-23
+# NM := llvm-nm-23
+
+# Another Homebrew llvm, such as a pinned one:
+#
+# CC := /opt/homebrew/opt/llvm@23/bin/clang
+
+# Warnings are errors. Turn that off for a local clang that is newer than CI's, which can warn
+# about code that CI's accepts:
+#
+# WERROR :=
+
+# Where output goes, build by default.
+#
+# BUILD_DIR := /tmp/nova-build

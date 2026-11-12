@@ -1,0 +1,2 @@
+description = "lib tests an architecture macro, which only the port may depend on"
+expect = "kernel/lib/width.c:4: error: arch-macro: '__x86_64__' is tested in portable code"

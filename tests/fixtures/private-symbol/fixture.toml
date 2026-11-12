@@ -1,0 +1,2 @@
+description = "the port calls a function that lib has but doesn't export"
+expect = "kernel/port/x86_64/probe.c: error: private-symbol: port references 'lib_secret'"

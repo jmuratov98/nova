@@ -1,0 +1,3 @@
+description = "ARCH names a port that doesn't exist, which is anything but x86_64"
+expect = "ARCH=aarch64 is not supported. The available ports are: x86_64"
+make_args = ["ARCH=aarch64"]

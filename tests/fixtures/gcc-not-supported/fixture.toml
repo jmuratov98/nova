@@ -1,0 +1,3 @@
+description = "the compiler is GCC, which Nova doesn't support, so the build stops before it starts"
+expect = "Cannot build Nova: CC './fake-gcc' isn't clang"
+make_args = ["CC=./fake-gcc"]

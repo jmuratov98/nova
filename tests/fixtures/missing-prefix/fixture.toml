@@ -1,0 +1,2 @@
+description = "lib exports a function whose name doesn't start with lib_"
+expect = "kernel/lib/helper.c: error: export-prefix: lib exports 'helper', which must start with 'lib_'"

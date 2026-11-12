@@ -1,0 +1,2 @@
+description = "the port's assembly declares a symbol with a raw .globl, which would skip hiding it"
+expect = "kernel/port/x86_64/extra.S:3: error: raw-globl: '.globl' declares a symbol directly"

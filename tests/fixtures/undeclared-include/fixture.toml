@@ -1,0 +1,2 @@
+description = "lib includes a header of the port, which lib doesn't declare as a dependency"
+expect = "fatal error: 'port/cpu.h' file not found"

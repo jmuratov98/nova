@@ -1,0 +1,2 @@
+description = "a directory under kernel/ is a subsystem that the declaration doesn't list"
+expect = "kernel/subsystems.toml: error: undeclared-directory: kernel/stray/ is a subsystem that isn't declared"
