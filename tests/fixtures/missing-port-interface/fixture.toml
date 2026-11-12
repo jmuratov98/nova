@@ -1,0 +1,3 @@
+description = "the port interface, which every port implements, has no directory"
+expect = "kernel/subsystems.toml: error: missing-port: the port interface kernel/port/include/ doesn't exist"
+remove = ["kernel/port/include"]

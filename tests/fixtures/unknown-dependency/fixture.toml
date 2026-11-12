@@ -1,0 +1,9 @@
+description = "a subsystem depends on one that the declaration doesn't list"
+expect = "kernel/subsystems.toml: error: unknown-dependency: a depends on nowhere, which isn't declared"
+
+[append]
+"kernel/subsystems.toml" = """
+
+[subsystem.a]
+dependencies = ["nowhere"]
+"""

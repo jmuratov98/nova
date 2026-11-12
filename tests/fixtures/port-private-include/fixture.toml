@@ -1,0 +1,9 @@
+description = "a portable subsystem includes a header that the port keeps for itself, not one of the port interface's"
+expect = "kernel/sync/probe.c:1: error: port-private-include: sync includes <port/x86_64/regs.h>"
+
+[append]
+"kernel/subsystems.toml" = """
+
+[subsystem.sync]
+dependencies = ["port"]
+"""

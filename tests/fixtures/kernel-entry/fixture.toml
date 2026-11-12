@@ -1,0 +1,2 @@
+description = "the port's entry point is hidden, so the linker script can't find it, which lld only warns about"
+expect = "kernel.elf: error: kernel-image: the entry point is 0x0, but port_entry is at"

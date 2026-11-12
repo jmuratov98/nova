@@ -1,0 +1,3 @@
+description = "Python 3.11 or newer isn't installed"
+expect = "Python 3.11 or newer is required, but 'python-not-installed' wasn't found or is older"
+make_args = ["PYTHON=python-not-installed"]

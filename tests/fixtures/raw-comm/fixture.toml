@@ -1,0 +1,2 @@
+description = "the port's assembly declares a global symbol with .comm, which skips hiding it as .globl does"
+expect = "kernel/port/x86_64/extra.S:3: error: raw-globl: '.comm' declares a symbol directly"

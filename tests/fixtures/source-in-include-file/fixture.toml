@@ -1,0 +1,2 @@
+description = "lib tests an architecture macro in a file that is neither a .c nor a .h"
+expect = "kernel/lib/word.inc:1: error: arch-macro: '__x86_64__' is tested in portable code"

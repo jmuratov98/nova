@@ -1,0 +1,10 @@
+description = "a subsystem includes a vendored header that sits beside the one it is permitted"
+expect = "kernel/a/a.c: error: forbidden-include: a includes third_party/vendor/other.h"
+
+[append]
+"kernel/subsystems.toml" = """
+
+[subsystem.a]
+dependencies = []
+third_party_headers = ["allowed.h"]
+"""

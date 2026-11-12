@@ -1,0 +1,9 @@
+description = "a subsystem includes the vendored header that the declaration permits it, which the rules must allow"
+
+[append]
+"kernel/subsystems.toml" = """
+
+[subsystem.a]
+dependencies = []
+third_party_headers = ["vendored.h"]
+"""

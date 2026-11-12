@@ -1,0 +1,12 @@
+description = "two subsystems declare each other as dependencies, so the graph isn't acyclic"
+expect = "kernel/subsystems.toml: error: cyclic-dependency: a -> b -> a"
+
+[append]
+"kernel/subsystems.toml" = """
+
+[subsystem.a]
+dependencies = ["b"]
+
+[subsystem.b]
+dependencies = ["a"]
+"""

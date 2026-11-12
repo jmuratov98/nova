@@ -1,0 +1,9 @@
+description = "the declaration lists a subsystem that has no directory"
+expect = "kernel/subsystems.toml: error: missing-directory: ghost is declared but kernel/ghost/ doesn't exist"
+
+[append]
+"kernel/subsystems.toml" = """
+
+[subsystem.ghost]
+dependencies = []
+"""

@@ -1,0 +1,5 @@
+#!/bin/sh
+# Answers the way GCC does: it announces itself, and it defines no __clang__.
+case "$*" in
+*--version*) echo "gcc (GCC) 14.2.0" ;;
+esac

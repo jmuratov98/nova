@@ -1,0 +1,2 @@
+description = "lib declares an extern for an export of the port, which lib doesn't declare as a dependency"
+expect = "kernel/lib/reach.c: error: undeclared-dependency: lib references 'port_irq_disable'"

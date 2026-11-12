@@ -1,0 +1,2 @@
+description = "the port references a symbol that no subsystem defines"
+expect = "kernel/port/x86_64/probe.c: error: unresolved-symbol: port references 'nowhere'"

@@ -1,0 +1,2 @@
+description = "the port's assembly declares a symbol with a capitalised .GLOBL after a label on the same line"
+expect = "kernel/port/x86_64/extra.S:3: error: raw-globl: '.GLOBL' declares a symbol directly"

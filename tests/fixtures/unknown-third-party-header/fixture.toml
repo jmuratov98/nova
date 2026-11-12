@@ -1,0 +1,10 @@
+description = "a subsystem is permitted a vendored header that isn't under third_party/"
+expect = "kernel/subsystems.toml: error: unknown-third-party-header: a may include 'vendored.h'"
+
+[append]
+"kernel/subsystems.toml" = """
+
+[subsystem.a]
+dependencies = []
+third_party_headers = ["vendored.h"]
+"""

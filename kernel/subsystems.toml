@@ -1,0 +1,37 @@
+# The central subsystem declaration (ADR 0002, ADR 0003).
+#
+# This is the one place that says which subsystems exist and what each may use. The build checks
+# that it is acyclic and matches the directories under kernel/, and generates every subsystem's
+# include paths from it. Add a subsystem here in the same change that adds its directory.
+#
+# A subsystem lives in kernel/<name>/. Its public headers are in kernel/<name>/include/<name>/
+# and everything else in the directory is private. The exception is the port: kernel/port/include/
+# holds the port interface, and kernel/port/<ARCH>/ holds the one port the build selects.
+
+# The port entry points: five that the portable kernel gives to ports (kernel booted, interrupt
+# arrived, system call arrived, log and panic, and frame allocation), as seven symbols. They carry
+# the port interface's neutral "k" prefix instead of their subsystem's, so a port never names the
+# subsystem behind them. Each maps to the subsystem that implements it, which may not exist yet.
+[entry_points]
+kmain = "start"
+kinterrupt = "irq"
+ksyscall = "syscall"
+kprint = "log"
+kpanic = "log"
+kframe_alloc = "mm"
+kframe_free = "mm"
+
+# Keys of a subsystem:
+#   dependencies        the subsystems it may use. Dependencies aren't transitive.
+#   third_party_headers vendored headers it may include, found under third_party/.
+#   unprefixed_exports  exports that don't carry the subsystem's prefix, which any subsystem may
+#                       reference. Only lib has them: the compiler emits calls to these four.
+
+[subsystem.lib]
+dependencies = []
+unprefixed_exports = ["memcpy", "memset", "memmove", "memcmp"]
+
+# The port. It uses lib and the port interface, and reaches the portable kernel only through the
+# entry points above.
+[subsystem.port]
+dependencies = ["lib"]
