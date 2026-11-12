@@ -26,6 +26,14 @@ SECTIONS {
 
     . = ALIGN(4096);
     .data : {
+        /*
+         * Limine's requests (boot), between their markers and in that order. Limine only looks
+         * in initialised data, so they come before .bss, and KEEP holds on to them, since
+         * nothing references them.
+         */
+        KEEP(*(.limine_requests_start))
+        KEEP(*(.limine_requests))
+        KEEP(*(.limine_requests_end))
         *(.data .data.*)
     } :data
 

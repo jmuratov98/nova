@@ -16,6 +16,13 @@
 #   CLANG_FORMAT clang-format
 #   CLANG_TIDY   clang-tidy
 #   RUFF         ruff
+#
+# The boot image, and running and debugging it, use these, also found on PATH:
+#
+#   HOSTCC  cc                   builds Limine's limine tool, which runs on this machine
+#   XORRISO xorriso              writes the boot image
+#   QEMU    qemu-system-x86_64   the port's emulator, 10.2 or newer
+#   LLDB    lldb
 
 # On Linux, apt.llvm.org installs LLVM 23 with versioned names, so name them here, or put
 # /usr/lib/llvm-23/bin on PATH, where they have their plain names:
@@ -26,6 +33,7 @@
 # NM := llvm-nm-23
 # CLANG_FORMAT := clang-format-23
 # CLANG_TIDY := clang-tidy-23
+# LLDB := lldb-23
 
 # Another Homebrew llvm, such as a pinned one:
 #
