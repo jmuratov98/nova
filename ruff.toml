@@ -1,0 +1,2 @@
+# Ruff checks with its default rules, and formats. 100 columns matches the C style.
+line-length = 100

@@ -18,6 +18,7 @@ The build checks all of these before it starts, and stops with one message that 
 | Python 3.11 or newer, standard library only | the boundary checks and the declaration tool |
 | clang, any version, Apple clang included | compiles. GCC isn't supported ([ADR 0005](adr/0005-clang-and-llvm-binary-tools-not-gcc.md)) |
 | `ld.lld`, `llvm-objcopy`, `llvm-nm` | link the subsystems and enforce their boundaries |
+| `clang-format`, `clang-tidy`, `ruff` | only for `make lint` and `make format` |
 
 ### macOS
 
@@ -41,10 +42,14 @@ sudo apt install make python3 clang-23 lld-23 llvm-23
 That installs the tools with versioned names (`clang-23`, `ld.lld-23`). Either put
 `/usr/lib/llvm-23/bin` on `PATH`, where they have their plain names, or name them in `config.mk`.
 
+`make lint` also needs `clang-format-23` and `clang-tidy-23` from the same repository, and ruff at
+the release that [`mk/versions.env`](../mk/versions.env) pins, which `pip install ruff==<release>`
+installs.
+
 ### Per-machine settings
 
-Copy `config.mk.example` to `config.mk`. Git ignores it. It sets `CC`, `LD`, `OBJCOPY`, `NM` and
-`PYTHON`, and anything on the command line wins over it.
+Copy `config.mk.example` to `config.mk`. Git ignores it. It sets `CC`, `LD`, `OBJCOPY`, `NM`,
+`PYTHON`, `CLANG_FORMAT`, `CLANG_TIDY` and `RUFF`, and anything on the command line wins over it.
 
 ## Targets and variables
 
@@ -52,6 +57,8 @@ Copy `config.mk.example` to `config.mk`. Git ignores it. It sets `CC`, `LD`, `OB
 |---|---|
 | `make kernel` | build the kernel. It is the default target until the boot image exists |
 | `make check` | build the kernel, then run the fixtures |
+| `make lint` | check formatting, run clang-tidy and ruff |
+| `make format` | rewrite C and Python in place to the style that `make lint` checks |
 | `make clean` | remove the build output for `ARCH` |
 | `make distclean` | remove the whole build directory, if Nova made it |
 | `ARCH=` | the port. `x86_64` is the default, and the only one |
@@ -63,6 +70,59 @@ Copy `config.mk.example` to `config.mk`. Git ignores it. It sets `CC`, `LD`, `OB
 Output goes out of tree, to `$(BUILD_DIR)/$(ARCH)/`. The kernel is compiled as freestanding C17 with
 `-nostdinc`, and a header shim, `build/x86_64/shim/`, holds only the compiler's copies of C17's nine
 freestanding headers. UBSan traps and needs no runtime. Link-time optimisation is off.
+
+## Lint and format
+
+`make lint` runs, on every file of Nova's own code (`kernel/`, `user/`, `tests/`, `tools/` and
+`mk/`, and never `third_party/`):
+
+- `clang-format --dry-run` on each `.c` and `.h`, against the root `.clang-format`: LLVM style,
+  4-space indents, 100 columns, braces inserted, and C17's freestanding headers in an include
+  block of their own. Assembly and `third_party/` aren't formatted, and `.clang-format-ignore`
+  keeps an editor from doing it;
+- `clang-tidy` on each C source that the build compiles, against the root `.clang-tidy`;
+- `ruff check` and `ruff format --check` on each `.py`, against `ruff.toml`, which sets only
+  `line-length = 100`.
+
+`make format` rewrites the same C and Python files in place. It needs neither a toolchain nor
+clang-tidy.
+
+Each file is checked on its own, so a second run does only what changed. Editing a header, the
+prelude or a configuration file redoes every clang-tidy check, since any source may read it.
+`make lint` goes on after a failure, so one run reports every file that fails.
+
+CI runs `make lint` as a job of its own, so that a style issue never stops the tests from
+running. It installs only LLVM 23 and ruff, at the versions in
+[`mk/versions.env`](../mk/versions.env), which the Makefile and the workflow both read. Locally `make lint` runs whatever is installed
+and prints a warning, not an error, when a tool isn't the pinned version. CI is the reference.
+Only a missing tool stops it. On macOS, `llvm` provides clang-format and clang-tidy and `ruff` is
+in the `Brewfile`.
+
+### clang-tidy
+
+It enables `clang-analyzer-*`, `bugprone-*`, `misc-*` and `portability-*`, and five readability
+checks, and every finding is an error. `.clang-tidy` says why each of the three checks it
+disables is off. A finding that is a false alarm gets a `NOLINT` on its line that names the check
+and says why, as in `// NOLINT(bugprone-foo): the reason`. A bare `NOLINT` isn't accepted.
+
+The port has a `.clang-tidy` of its own that turns off `portability-no-assembler` and nothing
+else. A port is made of inline assembly, which only the port may contain, so the check has nothing
+to say there, and it is still on everywhere else.
+
+Recursion is one of what it catches (`misc-no-recursion`, because kernel stacks are 16 KiB). Statement
+expressions, `##__VA_ARGS__` and `{}` initialisers are the compiler's job, through `-Wpedantic`.
+
+### The compile database
+
+clang-tidy reads `build/<arch>/compile_commands.json`, which every build writes itself, from the
+variables it compiles with and not from clang's `-MJ`. That option is no use here, because Apple
+clang adds `-Xclang -clang-vendor-feature=...` to what it records, and clang-tidy 23 rejects that as
+an error. The committed `.clangd` points editors at the same file, so build once and they have it.
+
+Something that compiles C registers it in `NOVA_COMPDB`. Each subsystem does in `mk/kernel.mk`,
+with the command in `<name>.compdb` and its sources in `<name>.srcs`, and compiles with that
+command. Userland and the host tests will do the same when they exist, and clang-tidy then covers
+them too.
 
 ## Subsystems and their boundaries
 

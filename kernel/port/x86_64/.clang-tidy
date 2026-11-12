@@ -1,0 +1,9 @@
+# The x86-64 port's analysis: the root's, less one check.
+#
+# portability-no-assembler
+#     flags every inline asm statement, and a port is made of them, as cpu.c's cli is.
+#     Inline asm is allowed only in this directory, which tools/check_sources.py enforces, so the
+#     check has nothing to tell us anywhere else and is still on there.
+InheritParentConfig: true
+Checks: >
+  -portability-no-assembler

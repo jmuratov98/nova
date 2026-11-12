@@ -20,9 +20,10 @@ KERNEL_CFLAGS := --target=$(PORT_TRIPLE) -std=c17 -ffreestanding -nostdinc -isys
 KERNEL_ASFLAGS := --target=$(PORT_TRIPLE) -ffreestanding -nostdinc -isystem $(SHIM) \
     -include mk/prelude.h $(OPT) $(WERROR)
 
-# Everything below needs the toolchain, and what a clean doesn't.
+# Everything below needs the toolchain, and what a clean doesn't. Neither does formatting.
 nova_goals := $(or $(MAKECMDGOALS),$(.DEFAULT_GOAL))
-ifneq ($(filter-out clean distclean help,$(nova_goals)),)
+nova_build_goals := $(filter-out clean distclean help format,$(nova_goals))
+ifneq ($(nova_build_goals),)
 
 nova_python_ok := $(shell PATH='$(PATH)' $(PYTHON) -c 'import sys; print(sys.version_info >= (3, 11))' 2>/dev/null)
 ifneq ($(nova_python_ok),True)
@@ -75,10 +76,15 @@ nova_inputs := $(CONFIG_STAMP) $(SHIM)/.stamp mk/prelude.h
 define nova_subsystem
 $(1).objs := $$(patsubst $$($(1).dir)/%,$(OBJ)/$(1)/%.o,$$($(1).srcs))
 
+# The compile database (mk/lint.mk) lists this subsystem's C sources with this command, and the
+# rule below compiles them with it, so the two can't differ.
+NOVA_COMPDB += $(1)
+$(1).compdb := $(CC) $(KERNEL_CFLAGS) $$($(1).includes)
+
 $(OBJ)/$(1)/%.c.o: $$($(1).dir)/%.c $(nova_inputs) | $(SOURCES_OK)
 	$$(call nova_say,CC,$$<)
 	$$(Q)mkdir -p $$(@D)
-	$$(Q)$(CC) $(KERNEL_CFLAGS) $$($(1).includes) -MMD -MP -c -o $$@ $$<
+	$$(Q)$$($(1).compdb) -MMD -MP -c -o $$@ $$<
 
 $(OBJ)/$(1)/%.S.o: $$($(1).dir)/%.S $(nova_inputs) | $(SOURCES_OK)
 	$$(call nova_say,AS,$$<)

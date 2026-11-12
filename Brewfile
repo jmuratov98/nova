@@ -13,3 +13,7 @@ brew "llvm"
 
 # ld.lld
 brew "lld"
+
+# What `make lint` and `make format` run. clang-format and clang-tidy come with llvm above, and
+# ruff checks and formats the Python.
+brew "ruff"

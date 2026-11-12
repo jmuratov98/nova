@@ -1,3 +1,5 @@
 /build/
 /config.mk
 __pycache__/
+# clangd's index
+/.cache/
