@@ -190,6 +190,10 @@ _Avoid_: process context
 The kernel handling an interrupt. Code in interrupt context can't block, and other interrupts wait until it's done.
 _Avoid_: atomic context, IRQ context
 
+**Masking section**:
+A stretch of kernel code during which interrupts can't arrive on this CPU, entered by taking a lock or by masking directly.
+_Avoid_: critical section (when meaning masked), atomic section, cli section
+
 ## Console and log
 
 **Console**:
