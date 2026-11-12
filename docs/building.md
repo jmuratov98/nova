@@ -86,7 +86,10 @@ kernel/
 ### How a boundary is enforced
 
 1. **Include paths.** A subsystem compiles with its own directory, the `include/` directories of
-   its declared dependencies and the nine freestanding headers, and nothing else.
+   its declared dependencies and the nine freestanding headers, and nothing else. An include by a
+   relative path, or one that a macro spells, doesn't use the include paths, so after compiling the
+   build also checks every file that the compiler says it opened, however the include was spelled.
+   A vendored header is allowed one file at a time, though the compiler searches its directory.
 2. **Private symbols are hidden.** Sources compile with `-fvisibility=hidden`. A public header
    marks what the subsystem exports with `NOVA_EXPORT`. Each subsystem is partially linked into one
    relocatable object (`ld.lld -r`), and `llvm-objcopy --localize-hidden` makes everything it
@@ -98,9 +101,16 @@ kernel/
    name and an underscore, as `lib_` does. The exceptions are `lib`'s `memcpy`, `memset`,
    `memmove` and `memcmp`, and the port's entry points, which start with `k`.
 
-Source checks cover what these can't: portable code, which is everything outside `kernel/port/<ARCH>/`,
-never tests an architecture macro, contains no inline `asm` and includes only the port interface's
-headers, and no source reaches a header with a path that leaves its directory.
+Source checks cover what these can't: portable code, which is everything outside
+`kernel/port/<ARCH>/`, never tests an architecture macro, contains no inline `asm` and includes
+only the port interface's headers. The port interface's own headers may include the port's
+supplements, which hold types and constants, so portable code can get them that way. Every file
+under `kernel/` is checked, whatever its extension, except the declaration, `.mk` files and linker
+scripts.
+
+The source checks read the text, so they catch mistakes and not someone set on evading them, for
+instance with a macro that builds a directive's name. The checks on the opened headers and on the
+symbols don't read text, and they are what holds when the source checks miss.
 
 ### Reading an error
 
@@ -109,16 +119,16 @@ Every error names its rule, and the fixtures assert these names.
 | Rule | Reported by | What broke |
 |---|---|---|
 | `file not found` for a header | the compiler | included a header of a subsystem that isn't a dependency |
-| `include-escape` | source check | included a header by a path that leaves the directory |
+| `forbidden-include` | header check | the compiler opened a header outside what the subsystem may include, such as by a relative path or through a macro, or a vendored header that isn't permitted |
 | `port-private-include` | source check | portable code included a header that belongs to the port |
 | `arch-macro`, `inline-asm` | source check | portable code depends on the architecture |
-| `raw-globl` | source check | declared a symbol with `.globl`, `.global` or `.weak` |
+| `raw-globl` | source check | declared a symbol with `.globl`, `.global`, `.weak` or `.comm`, in any case |
 | `private-symbol` | symbol check | referenced a symbol that a dependency doesn't export |
 | `undeclared-dependency` | symbol check | referenced an export of a subsystem that isn't a dependency |
 | `unresolved-symbol` | symbol check | referenced a symbol that no subsystem defines |
 | `export-prefix` | symbol check | exported a symbol without its subsystem's prefix |
-| `cyclic-dependency`, `unknown-dependency`, `missing-directory`, `undeclared-directory`, `unknown-third-party-header` | declaration | `subsystems.toml` is wrong or disagrees with the disk |
-| `kernel-image` | image check | the linked kernel has no entry point, or isn't an x86-64 executable |
+| `missing-declaration`, `malformed-declaration`, `cyclic-dependency`, `unknown-dependency`, `missing-directory`, `undeclared-directory`, `missing-port`, `unknown-third-party-header` | declaration | `subsystems.toml` is wrong or disagrees with the disk |
+| `kernel-image` | kernel check | the linked kernel has no entry point, or isn't an x86-64 executable |
 
 ### Adding a subsystem
 

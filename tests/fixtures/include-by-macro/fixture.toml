@@ -1,0 +1,2 @@
+description = "lib includes a header of the port through a macro, which hides the path from a reading of the text"
+expect = "kernel/lib/reach.c: error: forbidden-include: lib includes kernel/port/include/port/limit.h"

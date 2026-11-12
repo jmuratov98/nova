@@ -12,9 +12,8 @@ fixture.toml:
     description  what the fixture does, and why it is or isn't a violation
     expect       the stable message, which must appear in the build's output. A fixture without
                  one must pass: the build has to succeed
-    goal         the make goal, kernel by default
     make_args    more make arguments, empty by default
-    remove       files to delete from the copy, empty by default
+    remove       files and directories to delete from the copy, empty by default
     append       a table of file to text, which is added to the end of that file in the copy, so
                  that a fixture can extend kernel/subsystems.toml without copying all of it
 
@@ -49,7 +48,6 @@ class Fixture:
     name: str
     description: str
     expect: str  # empty for a fixture that must pass
-    goal: str
     make_args: tuple[str, ...]
     remove: tuple[str, ...]
     append: dict[str, str]
@@ -62,7 +60,6 @@ def load(directory: Path) -> Fixture:
         name=directory.name,
         description=spec["description"],
         expect=spec.get("expect", ""),
-        goal=spec.get("goal", "kernel"),
         make_args=tuple(spec.get("make_args", ())),
         remove=tuple(spec.get("remove", ())),
         append=dict(spec.get("append", {})),
@@ -85,7 +82,8 @@ def run(fixture: Fixture, root: Path, make: list[str], forwarded: list[str]) -> 
         if fixture.files.is_dir():
             shutil.copytree(fixture.files, scratch, dirs_exist_ok=True)
         for name in fixture.remove:
-            (scratch / name).unlink()
+            target = scratch / name
+            shutil.rmtree(target) if target.is_dir() else target.unlink()
         for name, text in fixture.append.items():
             with (scratch / name).open("a") as file:
                 file.write(text)
@@ -94,7 +92,7 @@ def run(fixture: Fixture, root: Path, make: list[str], forwarded: list[str]) -> 
         env = {k: v for k, v in os.environ.items() if k not in ("MAKEFLAGS", "MAKELEVEL", "MFLAGS")}
         command = [
             *make,
-            fixture.goal,
+            "kernel",
             *forwarded,
             f"BUILD_DIR={scratch / 'build'}",
             *fixture.make_args,

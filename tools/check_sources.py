@@ -2,7 +2,12 @@
 """Checks the kernel's sources for what the compiler's include paths can't (ADR 0002, ADR 0003).
 
 Portable code is everything under kernel/ except a port's own directory. It never tests an
-architecture macro.
+architecture macro, contains no inline asm, and includes only the port interface's headers.
+Assembly declares its symbols through the prelude's macros, and never directly.
+
+This reads the text, which catches mistakes and not a determined evasion, such as a macro that
+builds a directive's name. Layer 3 and the check on the headers that the compiler opened don't
+read text, and they are what holds when this misses.
 
     check_sources.py [--arch ARCH]
 """
@@ -17,8 +22,10 @@ from pathlib import Path
 import subsystems
 from subsystems import Declaration
 
-C_SUFFIXES = (".c", ".h")
-SCANNED = (*C_SUFFIXES, ".S")
+ASM_SUFFIXES = (".S", ".s")
+# Everything else under kernel/ is source, including a file that is only ever included, such as a
+# .inc, so that moving code into one doesn't take it out of the checks.
+NOT_SOURCE = (".toml", ".mk", ".ld")
 
 # The macros that name an architecture or one of its features.
 ARCH_MACROS = re.compile(
@@ -28,8 +35,11 @@ ARCH_MACROS = re.compile(
 INLINE_ASM = re.compile(r"\b(asm|__asm__|__asm)\b")
 INCLUDE = re.compile(r"^\s*#\s*include\s*([<\"])([^>\"]+)[>\"]")
 # Directives that make a symbol global without the prelude's macros, whether in an assembly file or
-# in the string of an inline asm. Only the prelude's own macros may use them.
-RAW_GLOBAL = re.compile(r"(?:^|[\s\"';])(\.globl|\.global|\.weak)\b")
+# in the string of an inline asm, and in any case, after a label or a semicolon. Only the prelude's
+# own macros may use them.
+RAW_GLOBAL = re.compile(
+    r"(?:^|[\s\"';:])(\.globl|\.global|\.weak|\.weakref|\.comm|\.common)\b", re.IGNORECASE
+)
 
 
 def spaces(text: str) -> str:
@@ -95,43 +105,33 @@ def resolve(declaration: Declaration, path: str, quoted: bool, header: str) -> s
 
 
 def check_file(declaration: Declaration, path: str) -> list[str]:
-    original = (declaration.root / path).read_text()
-    is_c = path.endswith(C_SUFFIXES)
+    original = (declaration.root / path).read_text(errors="replace")
+    is_c = not path.endswith(ASM_SUFFIXES)
     quotes = "\"'" if is_c else ""
-    code = blank(original, quotes, hide=True)
+    visible = blank(original, quotes).splitlines()
+    code = blank(original, quotes, hide=True).splitlines()
     errors = []
-    for number, line in enumerate(blank(original, quotes).splitlines(), start=1):
+    for number, line in enumerate(visible, start=1):
         for match in RAW_GLOBAL.finditer(line):
             errors.append(
                 f"{path}:{number}: error: raw-globl: '{match.group(1)}' declares a symbol "
                 f"directly, so use NOVA_FUNC or NOVA_EXPORT_FUNC from mk/prelude.h, which make "
                 f"it hidden unless it is exported"
             )
-    for number, line in enumerate(blank(original, quotes).splitlines(), start=1):
-        include = INCLUDE.match(line)
-        if not include:
-            continue
-        spelled = f"{include[1]}{include[2]}{'>' if include[1] == '<' else include[1]}"
-        header = Path(include[2])
-        # The include paths are what keeps a subsystem to its dependencies' headers, and a path
-        # that climbs out of the directory, or starts at the root, doesn't use them.
-        if header.is_absolute() or ".." in header.parts:
-            errors.append(
-                f"{path}:{number}: error: include-escape: {subsystem_of(path)} includes {spelled}, "
-                f"which names a header by a path outside the include paths"
-            )
-            continue
-        # The port interface's headers are the only part of the port that portable code may
-        # include.
-        found = resolve(declaration, path, include[1] == '"', include[2])
-        if subsystem_of(path) != subsystems.PORT and found and not is_portable(found):
-            errors.append(
-                f"{path}:{number}: error: port-private-include: {subsystem_of(path)} includes "
-                f"{spelled}, which belongs to the port, and portable code includes only the port "
-                f"interface's headers"
-            )
+    # The port interface's headers are the only part of the port that portable code may include.
+    if subsystem_of(path) != subsystems.PORT:
+        for number, line in enumerate(visible, start=1):
+            include = INCLUDE.match(line)
+            found = include and resolve(declaration, path, include[1] == '"', include[2])
+            if include and found and not is_portable(found):
+                spelled = f"{include[1]}{include[2]}{'>' if include[1] == '<' else include[1]}"
+                errors.append(
+                    f"{path}:{number}: error: port-private-include: {subsystem_of(path)} includes "
+                    f"{spelled}, which belongs to the port, and portable code includes only the "
+                    f"port interface's headers"
+                )
     if is_portable(path):
-        for number, line in enumerate(code.splitlines(), start=1):
+        for number, line in enumerate(code, start=1):
             for match in ARCH_MACROS.finditer(line):
                 errors.append(
                     f"{path}:{number}: error: arch-macro: '{match.group(1)}' is tested in "
@@ -148,7 +148,7 @@ def check_file(declaration: Declaration, path: str) -> list[str]:
 def check(declaration: Declaration) -> list[str]:
     errors = []
     for path in declaration.files():
-        if path.endswith(SCANNED):
+        if not path.endswith(NOT_SOURCE):
             errors.extend(check_file(declaration, path))
     return errors
 

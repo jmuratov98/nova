@@ -8,9 +8,10 @@
 # and everything else in the directory is private. The exception is the port: kernel/port/include/
 # holds the port interface, and kernel/port/<ARCH>/ holds the one port the build selects.
 
-# The seven entry points the portable kernel gives to ports. They carry the port interface's
-# neutral "k" prefix instead of their subsystem's, so a port never names the subsystem behind
-# them. Each maps to the subsystem that implements it, which may not exist yet.
+# The port entry points: five that the portable kernel gives to ports (kernel booted, interrupt
+# arrived, system call arrived, log and panic, and frame allocation), as seven symbols. They carry
+# the port interface's neutral "k" prefix instead of their subsystem's, so a port never names the
+# subsystem behind them. Each maps to the subsystem that implements it, which may not exist yet.
 [entry_points]
 kmain = "start"
 kinterrupt = "irq"

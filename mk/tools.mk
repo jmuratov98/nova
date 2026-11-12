@@ -19,6 +19,9 @@ $(call nova_default,LD,ld.lld)
 $(call nova_default,OBJCOPY,llvm-objcopy)
 $(call nova_default,NM,llvm-nm)
 
+# The tools that a build runs, so that changing one rebuilds and that a fixture uses the same ones.
+NOVA_TOOLS := CC LD OBJCOPY NM
+
 # Homebrew's llvm is keg-only on macOS. These come last, so that a clang already on PATH (Apple's)
 # still wins.
 export PATH := $(PATH):/opt/homebrew/opt/llvm/bin:/usr/local/opt/llvm/bin

@@ -48,7 +48,7 @@ include $(BUILD)/subsystems.mk
 # Anything that changes what the compiler would produce is in the stamp, so changing it rebuilds
 # everything. FORCE only rewrites the stamp when its contents differ.
 nova_cc_id := $(shell PATH='$(PATH)' $(CC) --version 2>&1 | head -n 1)
-nova_config := $(nova_cc_id) $(CC) $(LD) $(OBJCOPY) $(KERNEL_CFLAGS) $(KERNEL_ASFLAGS) \
+nova_config := $(nova_cc_id) $(foreach t,$(NOVA_TOOLS),$($(t))) $(KERNEL_CFLAGS) $(KERNEL_ASFLAGS) \
     $(foreach s,$(SUBSYSTEMS),$(s): $($(s).includes))
 CONFIG_STAMP := $(BUILD)/config.stamp
 $(CONFIG_STAMP): FORCE
@@ -96,14 +96,24 @@ $(foreach s,$(SUBSYSTEMS),$(eval $(call nova_subsystem,$(s))))
 
 SUBSYSTEM_OBJS := $(foreach s,$(SUBSYSTEMS),$(SUB)/$(s).o)
 
+# Every header that the compiler opened, however the include was spelled, must be one that the
+# subsystem may include. This runs before the symbol check, which would otherwise report what a
+# forbidden header lets a subsystem reach as that.
+HEADERS_OK := $(BUILD)/headers.ok
+$(HEADERS_OK): $(SUBSYSTEM_OBJS) kernel/subsystems.toml tools/check_headers.py tools/subsystems.py
+	$(call nova_say,CHECK,headers)
+	$(Q)$(PYTHON) tools/check_headers.py --arch $(ARCH) --build-dir $(BUILD) --allow mk/prelude.h
+	$(Q)touch $@
+
 # Every undefined symbol in a subsystem's object must be one that a declared dependency exports.
 SYMBOLS_OK := $(BUILD)/symbols.ok
-$(SYMBOLS_OK): $(SUBSYSTEM_OBJS) kernel/subsystems.toml tools/check_symbols.py tools/subsystems.py
+$(SYMBOLS_OK): $(SUBSYSTEM_OBJS) kernel/subsystems.toml tools/check_symbols.py tools/subsystems.py \
+    | $(HEADERS_OK)
 	$(call nova_say,CHECK,symbols)
 	$(Q)$(PYTHON) tools/check_symbols.py --arch $(ARCH) --build-dir $(BUILD) --nm '$(NM)'
 	$(Q)touch $@
 
-$(KERNEL): $(SUBSYSTEM_OBJS) $(SYMBOLS_OK) $(PORT_LDSCRIPT)
+$(KERNEL): $(SUBSYSTEM_OBJS) $(HEADERS_OK) $(SYMBOLS_OK) $(PORT_LDSCRIPT)
 	$(call nova_say,LINK,$@)
 	$(Q)$(LD) -static --no-pie -T $(PORT_LDSCRIPT) -o $@ $(SUBSYSTEM_OBJS)
 	$(Q)$(PYTHON) tools/check_kernel.py --nm '$(NM)' --machine $(PORT_ELF_MACHINE) --entry $(PORT_ENTRY) $@

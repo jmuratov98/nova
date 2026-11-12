@@ -2,7 +2,7 @@
 """Nova's central subsystem declaration.
 
 kernel/subsystems.toml is the one place that says which subsystems exist and what each may use
-(ADR 0002, ADR 0003). This module reads it, checks it against the directories on disk, and
+(ADR 0002, ADR 0003). This reads it, checks it against the directories on disk, and
 generates what the build needs from it, which is each subsystem's include paths and sources.
 
     subsystems.py check    [--arch ARCH]
@@ -38,7 +38,6 @@ class DeclarationError(Exception):
 
     def __init__(self, rule: str, message: str) -> None:
         super().__init__(f"{DECLARATION}: error: {rule}: {message}")
-        self.rule = rule
 
 
 @dataclass(frozen=True)
@@ -48,17 +47,23 @@ class Subsystem:
     unprefixed_exports: tuple[str, ...]
     directory: str  # where its sources and private headers are
     public_includes: tuple[str, ...]  # what a subsystem that depends on it compiles with
-    third_party_includes: tuple[str, ...]  # where its permitted vendored headers are
+    third_party_headers: tuple[str, ...]  # the vendored headers it may include, as files
 
     @property
     def prefix(self) -> str:
         return f"{self.name}_"
 
+    @property
+    def third_party_includes(self) -> tuple[str, ...]:
+        """The directories that hold its vendored headers, which the compiler has to search."""
+        return tuple(
+            dict.fromkeys(Path(header).parent.as_posix() for header in self.third_party_headers)
+        )
+
 
 @dataclass(frozen=True)
 class Declaration:
     root: Path
-    arch: str
     subsystems: dict[str, Subsystem]  # dependencies come before their dependents
     entry_points: dict[str, str]  # entry point -> the subsystem that implements it
 
@@ -70,6 +75,16 @@ class Declaration:
             found.extend(self.subsystems[dependency].public_includes)
         found.extend(subsystem.third_party_includes)
         return list(dict.fromkeys(found))
+
+    def may_include(self, name: str) -> tuple[list[str], list[str]]:
+        """Where a header that a subsystem includes may be: the directories that are its own or
+        its dependencies' public ones, and the vendored headers that it is permitted, as files. The
+        compiler searches a vendored header's whole directory, so only this tells them apart."""
+        subsystem = self.subsystems[name]
+        directories = [subsystem.directory, *subsystem.public_includes]
+        for dependency in subsystem.dependencies:
+            directories.extend(self.subsystems[dependency].public_includes)
+        return list(dict.fromkeys(directories)), list(subsystem.third_party_headers)
 
     def sources(self, name: str) -> list[str]:
         """The files a subsystem compiles. Its directory is flat."""
@@ -115,9 +130,9 @@ def load(root: Path, arch: str) -> Declaration:
             unprefixed_exports=tuple(table.get("unprefixed_exports", ())),
             directory=_directory(arch, name),
             public_includes=_public_includes(root, arch, name),
-            third_party_includes=_third_party_includes(root, name, table),
+            third_party_headers=_third_party_headers(root, name, table),
         )
-    return Declaration(root, arch, subsystems, dict(entry_points))
+    return Declaration(root, subsystems, dict(entry_points))
 
 
 def _directory(arch: str, name: str) -> str:
@@ -136,7 +151,7 @@ def _public_includes(root: Path, arch: str, name: str) -> tuple[str, ...]:
     return tuple(c for c in candidates if (root / c).is_dir())
 
 
-def _third_party_includes(root: Path, name: str, table: dict[str, Any]) -> tuple[str, ...]:
+def _third_party_headers(root: Path, name: str, table: dict[str, Any]) -> tuple[str, ...]:
     found = []
     for header in table.get("third_party_headers", ()):
         matches = sorted((root / THIRD_PARTY_DIR).glob(f"*/{header}"))
@@ -146,7 +161,7 @@ def _third_party_includes(root: Path, name: str, table: dict[str, Any]) -> tuple
                 f"{name} may include '{header}', which must be in exactly one directory under "
                 f"{THIRD_PARTY_DIR}/ but is in {len(matches)}",
             )
-        found.append(matches[0].parent.relative_to(root).as_posix())
+        found.append(matches[0].relative_to(root).as_posix())
     return tuple(found)
 
 
@@ -167,11 +182,11 @@ def _check_disk(root: Path, arch: str, names: list[str]) -> None:
     if PORT in names:
         if not (root / PORT_INTERFACE_DIR).is_dir():
             raise DeclarationError(
-                "missing-directory", f"the port interface {PORT_INTERFACE_DIR}/ doesn't exist"
+                "missing-port", f"the port interface {PORT_INTERFACE_DIR}/ doesn't exist"
             )
         if not (root / KERNEL_DIR / PORT / arch / PORT_FRAGMENT).is_file():
             raise DeclarationError(
-                "missing-directory",
+                "missing-port",
                 f"there is no port for {arch}: "
                 f"{KERNEL_DIR}/{PORT}/{arch}/{PORT_FRAGMENT} doesn't exist",
             )

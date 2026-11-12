@@ -3,5 +3,5 @@
 .PHONY: check
 check: kernel
 	$(Q)$(PYTHON) tools/run_fixtures.py --make '$(MAKE)' -- \
-	    'ARCH=$(ARCH)' 'PYTHON=$(PYTHON)' 'CC=$(CC)' 'LD=$(LD)' 'OBJCOPY=$(OBJCOPY)' 'NM=$(NM)' \
+	    'ARCH=$(ARCH)' 'PYTHON=$(PYTHON)' $(foreach t,$(NOVA_TOOLS),'$(t)=$($(t))') \
 	    'OPT=$(OPT)' 'WERROR=$(WERROR)'

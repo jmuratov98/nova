@@ -1,0 +1,9 @@
+description = "a subsystem's table has a key that the declaration doesn't know, such as a misspelt one"
+expect = "kernel/subsystems.toml: error: malformed-declaration: a has unknown keys: dependancies"
+
+[append]
+"kernel/subsystems.toml" = """
+
+[subsystem.a]
+dependancies = []
+"""

@@ -1,5 +1,5 @@
-#include "../port/include/port/cpu.h"
+#include "../port/include/port/limit.h"
 
-void lib_reach(void);
+int lib_reach(void);
 
-void lib_reach(void) { port_irq_disable(); }
+int lib_reach(void) { return PORT_LIMIT; }

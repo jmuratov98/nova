@@ -1,2 +1,2 @@
-description = "lib includes a header by a relative path out of its own directory, which skips the include paths"
-expect = "kernel/lib/reach.c:1: error: include-escape: lib includes \"../port/include/port/cpu.h\""
+description = "lib includes a header of the port by a relative path, which skips the include paths"
+expect = "kernel/lib/reach.c: error: forbidden-include: lib includes kernel/port/include/port/limit.h"
