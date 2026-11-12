@@ -35,3 +35,13 @@ unprefixed_exports = ["memcpy", "memset", "memmove", "memcmp"]
 # entry points above.
 [subsystem.port]
 dependencies = ["lib"]
+
+# Limine's requests and responses, turned into Nova's boot information. It is the only subsystem
+# that sees Limine.
+[subsystem.boot]
+dependencies = ["lib"]
+third_party_headers = ["limine.h"]
+
+# The start-up order. It may use every subsystem, and implements kmain.
+[subsystem.start]
+dependencies = ["boot", "port"]

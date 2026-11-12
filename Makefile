@@ -26,17 +26,20 @@ MAKEFLAGS += --no-builtin-rules
 
 include mk/tools.mk
 include mk/kernel.mk
+include mk/image.mk
+include mk/qemu.mk
 include mk/check.mk
 include mk/lint.mk
 
 .PHONY: all
-all: kernel
+all: image
 
 .PHONY: clean
 clean:
 	$(Q)rm -rf '$(BUILD_DIR)/$(ARCH)'
 
-# distclean removes the whole build directory, so it only does that to one that Nova made.
+# distclean removes the whole build directory, the downloads in its cache included, so it only does
+# that to one that Nova made.
 .PHONY: distclean
 distclean:
 	$(Q)if [ -e '$(BUILD_DIR)' ] && [ ! -f '$(BUILD_DIR)/.nova-build' ]; then \
@@ -46,17 +49,26 @@ distclean:
 .PHONY: help
 help:
 	@echo 'Targets:'
-	@echo '  kernel     build the kernel (the default target for now)'
+	@echo '  image      build the boot image (the default target), which needs xorriso and, the'
+	@echo '             first time, the network'
+	@echo '  kernel     build the kernel only'
 	@echo '  check      build the kernel, then run the fixtures'
+	@echo '  run        boot the image in QEMU, with serial and the monitor in this terminal'
+	@echo '  debug      the same, paused, with a gdbstub for `make lldb`'
+	@echo '  lldb       debug the kernel that `make debug` is running, from a second terminal'
 	@echo '  lint       check formatting, run clang-tidy and ruff (CI runs this as its own job)'
 	@echo '  format     rewrite C and Python in place to the style that lint checks'
-	@echo '  clean      remove the build output for ARCH'
-	@echo '  distclean  remove the whole build directory'
+	@echo '  clean      remove the build output for ARCH, and keep the downloads'
+	@echo '  distclean  remove the whole build directory, downloads included'
 	@echo 'Variables:'
-	@echo '  ARCH=      the port to build, x86_64 (the default) is the only one'
-	@echo '  OPT=       optimisation and debug flags, -O2 -g by default'
-	@echo '  WERROR=    -Werror by default, empty to turn warnings back into warnings'
-	@echo '  V=1        print each command in full'
-	@echo '  BUILD_DIR= where output goes, build by default'
+	@echo '  ARCH=       the port to build, x86_64 (the default) is the only one'
+	@echo '  OPT=        optimisation and debug flags, -O2 -g by default'
+	@echo '  WERROR=     -Werror by default, empty to turn warnings back into warnings'
+	@echo '  V=1         print each command in full'
+	@echo '  BUILD_DIR=  where output goes, build by default'
+	@echo '  FIRMWARE=   uefi (the default) or bios, for run and debug'
+	@echo '  DEBUG_PORT= the gdbstub port on 127.0.0.1, 1234 by default'
+	@echo '  QEMUFLAGS=  more flags for QEMU, for run and debug'
 	@echo 'Per-machine settings (CC, LD, OBJCOPY, NM, PYTHON) go in config.mk, and so do'
-	@echo 'CLANG_FORMAT, CLANG_TIDY and RUFF, which lint and format run.'
+	@echo 'CLANG_FORMAT, CLANG_TIDY and RUFF, which lint and format run, and HOSTCC, XORRISO,'
+	@echo 'QEMU and LLDB.'

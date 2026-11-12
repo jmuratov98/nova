@@ -1,23 +1,30 @@
 # Building Nova
 
 ```
-gmake kernel    # on macOS
-make kernel     # on Linux
+gmake    # on macOS
+make     # on Linux
 ```
 
-builds a linked x86-64 kernel at `build/x86_64/kernel.elf`. `make check` then runs the fixtures that
-keep the build's rules from going quietly dead. Neither needs QEMU, a boot image or the network.
+builds the boot image, `build/x86_64/nova.iso`, which boots under both BIOS and UEFI. `make run` then
+boots it in QEMU. `make kernel` builds only the linked x86-64 kernel, `build/x86_64/kernel.elf`, and
+`make check` runs the fixtures that keep the build's rules from going quietly dead. Neither of those
+two needs QEMU, a boot image or the network.
 
 ## Prerequisites
 
-The build checks all of these before it starts, and stops with one message that says what is missing.
+The build checks the first four of these before it starts, and the rest when a target needs them.
+Either way it stops with one message that says what is missing.
 
 | Need | Why |
 |---|---|
 | GNU Make 4.3 or newer | drives the build |
-| Python 3.11 or newer, standard library only | the boundary checks and the declaration tool |
+| Python 3.11 or newer, standard library only | the boundary checks, the declaration tool and the downloads |
 | clang, any version, Apple clang included | compiles. GCC isn't supported ([ADR 0005](adr/0005-clang-and-llvm-binary-tools-not-gcc.md)) |
 | `ld.lld`, `llvm-objcopy`, `llvm-nm` | link the subsystems and enforce their boundaries |
+| `xorriso`, and a host C compiler as `cc` | write the boot image, and build Limine's `limine` tool for it |
+| the network, once | the first image build and the first run download Limine and QEMU's firmware |
+| QEMU 10.2 or newer, `qemu-system-x86_64` | only for `make run` and `make debug` |
+| `lldb` | only for `make lldb` |
 | `clang-format`, `clang-tidy`, `ruff` | only for `make lint` and `make format` |
 
 ### macOS
@@ -27,7 +34,7 @@ brew bundle
 ```
 
 installs everything in the `Brewfile`. macOS's own `make` is 3.81, which is too old, so run Homebrew's
-as `gmake`. Homebrew's `llvm` is keg-only, and the build looks in its directory without it being on
+as `gmake`. Apple's `lldb` and `cc` come with the Xcode command-line tools. Homebrew's `llvm` is keg-only, and the build looks in its directory without it being on
 `PATH`. Homebrew's `python3` has to come before `/usr/bin/python3` on `PATH`, which is what a
 Homebrew install normally does.
 
@@ -36,11 +43,13 @@ Homebrew install normally does.
 CI builds with LLVM 23 from [apt.llvm.org](https://apt.llvm.org), on Ubuntu:
 
 ```
-sudo apt install make python3 clang-23 lld-23 llvm-23
+sudo apt install make python3 clang-23 lld-23 llvm-23 xorriso
+sudo apt install --no-install-recommends qemu-system-x86 lldb-23
 ```
 
-That installs the tools with versioned names (`clang-23`, `ld.lld-23`). Either put
+That installs the tools with versioned names (`clang-23`, `ld.lld-23`, `lldb-23`). Either put
 `/usr/lib/llvm-23/bin` on `PATH`, where they have their plain names, or name them in `config.mk`.
+QEMU's recommended packages include firmware that Nova doesn't use, since it downloads its own.
 
 `make lint` also needs `clang-format-23` and `clang-tidy-23` from the same repository, and ruff at
 the release that [`mk/versions.env`](../mk/versions.env) pins, which `pip install ruff==<release>`
@@ -49,27 +58,79 @@ installs.
 ### Per-machine settings
 
 Copy `config.mk.example` to `config.mk`. Git ignores it. It sets `CC`, `LD`, `OBJCOPY`, `NM`,
-`PYTHON`, `CLANG_FORMAT`, `CLANG_TIDY` and `RUFF`, and anything on the command line wins over it.
+`PYTHON`, `CLANG_FORMAT`, `CLANG_TIDY`, `RUFF`, `HOSTCC`, `XORRISO`, `QEMU` and `LLDB`, and anything
+on the command line wins over it.
 
 ## Targets and variables
 
 | | |
 |---|---|
-| `make kernel` | build the kernel. It is the default target until the boot image exists |
+| `make`, `make image` | build the boot image |
+| `make kernel` | build the kernel only |
 | `make check` | build the kernel, then run the fixtures |
+| `make run` | boot the image in QEMU |
+| `make debug` | the same, paused, with a gdbstub for `make lldb` |
+| `make lldb` | from a second terminal, debug the kernel that `make debug` is running |
 | `make lint` | check formatting, run clang-tidy and ruff |
 | `make format` | rewrite C and Python in place to the style that `make lint` checks |
-| `make clean` | remove the build output for `ARCH` |
-| `make distclean` | remove the whole build directory, if Nova made it |
+| `make clean` | remove the build output for `ARCH`, and keep the downloads |
+| `make distclean` | remove the whole build directory, downloads included, if Nova made it |
 | `ARCH=` | the port. `x86_64` is the default, and the only one |
 | `OPT=` | replaces `-O2 -g` |
 | `WERROR=` | empty turns off `-Werror`, for a local clang that is newer than CI's |
 | `V=1` | print each command in full |
 | `BUILD_DIR=` | where output goes, `build` by default |
+| `FIRMWARE=` | `uefi` (the default) or `bios`, for `run` and `debug` |
+| `DEBUG_PORT=` | the gdbstub's port on 127.0.0.1, 1234 by default |
+| `QEMUFLAGS=` | more flags for QEMU, as in `QEMUFLAGS='-d int,cpu_reset -D qemu.log'` |
 
 Output goes out of tree, to `$(BUILD_DIR)/$(ARCH)/`. The kernel is compiled as freestanding C17 with
 `-nostdinc`, and a header shim, `build/x86_64/shim/`, holds only the compiler's copies of C17's nine
 freestanding headers. UBSan traps and needs no runtime. Link-time optimisation is off.
+
+## The boot image and what it downloads
+
+The boot image is one hybrid ISO that boots under both BIOS and UEFI. xorriso writes it with Limine's
+El Torito images for both, and `limine bios-install` then makes it bootable from a BIOS. Limine's
+configuration is [`mk/limine.conf`](../mk/limine.conf), and the port's `port.mk` holds the recipe.
+
+Two things are downloaded, each pinned to a release and checked against a sha256 that the repo
+records, so a download that doesn't match is never used:
+
+- Limine, at the release that [`mk/image.mk`](../mk/image.mk) pins. Its `limine` tool is built from
+  the release's `limine.c` with `HOSTCC`. The C header, `limine.h`, isn't downloaded: it is vendored
+  in [`third_party/limine/`](../third_party/limine/README.md), so compiling never needs the network.
+- QEMU's firmware, SeaBIOS and edk2, from QEMU's own `pc-bios/` at the tag that the port's `port.mk`
+  pins. They are byte for byte what Homebrew's QEMU ships, so every host runs the same firmware.
+
+Both go into `build/cache/`, which `make clean` keeps and `make distclean` removes. Only the first
+image build and the first run need the network.
+
+## Running and debugging
+
+`make run` boots the image on the one QEMU machine that the port defines: q35, TCG, one `qemu64` CPU
+with SMEP and SMAP, 256 MiB, no network card, and an `isa-debug-exit` device. It opens a window,
+and the serial console and QEMU's monitor share the terminal: Ctrl-A C switches between them and
+Ctrl-A X quits. `FIRMWARE=bios` boots SeaBIOS instead of UEFI. Each UEFI boot starts from a fresh
+copy of its variables.
+
+A run ends when the kernel powers off with an outcome, and one line says which
+([ADR 0006](adr/0006-init-exiting-powers-off-and-boot-tests-read-the-outcome.md)):
+
+| The line | QEMU's exit status |
+|---|---|
+| `outcome: init exited 0` | 33 |
+| `outcome: init exited non-zero` | 35 |
+| `outcome: panic` | 37 |
+| `no outcome: the machine reset or triple-faulted, or QEMU was quit` | 0 |
+
+`make run` succeeds only on the first, so make reports an error for any other ending, and never
+for 33.
+
+To debug, run `make debug` in one terminal. It starts the same machine paused, with a gdbstub on
+127.0.0.1. Then run `make lldb` in a second terminal, which loads the kernel's symbols, connects,
+and stops at `kmain`. lldb is the supported debugger. What it does once it is connected is in
+[`tools/lldb/nova.lldb`](../tools/lldb/nova.lldb).
 
 ## Lint and format
 
@@ -197,7 +258,8 @@ depends on, since dependencies aren't transitive. Put the public headers under
 `include/<name>/`, and start every export's name with `<name>_`.
 
 A port is a directory `kernel/port/<arch>/` with a `port.mk`, which sets the target triple, the
-codegen flags, the linker script and the entry point.
+codegen flags, the linker script and the entry point, the boot image's recipe, and the QEMU machine
+with its firmware.
 
 ## Fixtures
 

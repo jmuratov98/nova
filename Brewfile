@@ -14,6 +14,12 @@ brew "llvm"
 # ld.lld
 brew "lld"
 
+# xorriso writes the boot image.
+brew "xorriso"
+
+# QEMU 10.2 or newer, for `make run` and `make debug`. lldb, for `make lldb`, is Apple's.
+brew "qemu"
+
 # What `make lint` and `make format` run. clang-format and clang-tidy come with llvm above, and
 # ruff checks and formats the Python.
 brew "ruff"

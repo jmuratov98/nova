@@ -1,0 +1,6 @@
+# What lldb does once `make lldb` has loaded the kernel's symbols and connected to `make debug`'s
+# gdbstub: stop at kmain, which the port calls once its start-up is done.
+#
+# QEMU implements the breakpoint itself, so it can be set before the kernel is in memory.
+breakpoint set --name kmain
+continue
