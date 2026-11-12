@@ -38,8 +38,9 @@ Checks: >
 WarningsAsErrors: '*'
 
 # Findings in a header are reported when the header is Nova's own: under kernel/, user/ or tests/.
-# That keeps out the compiler's freestanding headers (in the build's shim directory) and, with the
-# exclusion, anything vendored under third_party/, which Nova doesn't lint. Which sources are
-# analysed at all is what the compile database lists, and never anything under third_party/.
+# The compiler's freestanding headers (the build's shim directory is -isystem) are never reported,
+# and the exclusion keeps out anything vendored under third_party/, which Nova doesn't lint. Which
+# sources are analysed at all is what the compile database lists, and never anything under
+# third_party/.
 HeaderFilterRegex: '(^|/)(kernel|user|tests)/'
 ExcludeHeaderFilterRegex: '(^|/)third_party/'

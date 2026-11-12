@@ -1,0 +1,4 @@
+# Assembly and third-party code aren't formatted. make lint never passes them to clang-format, and this
+# keeps an editor or a direct run from doing it either.
+**/*.S
+third_party/**

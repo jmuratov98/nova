@@ -76,15 +76,15 @@ nova_inputs := $(CONFIG_STAMP) $(SHIM)/.stamp mk/prelude.h
 define nova_subsystem
 $(1).objs := $$(patsubst $$($(1).dir)/%,$(OBJ)/$(1)/%.o,$$($(1).srcs))
 
-# The compile database (mk/lint.mk) lists this subsystem's C sources with the command below, which
-# is the one the rule below compiles them with.
+# The compile database (mk/lint.mk) lists this subsystem's C sources with this command, and the
+# rule below compiles them with it, so the two can't differ.
 NOVA_COMPDB += $(1)
 $(1).compdb := $(CC) $(KERNEL_CFLAGS) $$($(1).includes)
 
 $(OBJ)/$(1)/%.c.o: $$($(1).dir)/%.c $(nova_inputs) | $(SOURCES_OK)
 	$$(call nova_say,CC,$$<)
 	$$(Q)mkdir -p $$(@D)
-	$$(Q)$(CC) $(KERNEL_CFLAGS) $$($(1).includes) -MMD -MP -c -o $$@ $$<
+	$$(Q)$$($(1).compdb) -MMD -MP -c -o $$@ $$<
 
 $(OBJ)/$(1)/%.S.o: $$($(1).dir)/%.S $(nova_inputs) | $(SOURCES_OK)
 	$$(call nova_say,AS,$$<)

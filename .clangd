@@ -1,3 +1,5 @@
 # Editors read the compile database that the build writes (any build does, `make kernel` included).
+# It is under the one port that exists. A BUILD_DIR set in config.mk needs its own copy of this
+# file.
 CompileFlags:
   CompilationDatabase: build/x86_64

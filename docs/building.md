@@ -43,7 +43,8 @@ That installs the tools with versioned names (`clang-23`, `ld.lld-23`). Either p
 `/usr/lib/llvm-23/bin` on `PATH`, where they have their plain names, or name them in `config.mk`.
 
 `make lint` also needs `clang-format-23` and `clang-tidy-23` from the same repository, and ruff at
-the release that [`mk/versions.env`](../mk/versions.env) pins, as in `pip install ruff==0.17.5`.
+the release that [`mk/versions.env`](../mk/versions.env) pins, which `pip install ruff==<release>`
+installs.
 
 ### Per-machine settings
 
@@ -77,7 +78,8 @@ freestanding headers. UBSan traps and needs no runtime. Link-time optimisation i
 
 - `clang-format --dry-run` on each `.c` and `.h`, against the root `.clang-format`: LLVM style,
   4-space indents, 100 columns, braces inserted, and C17's freestanding headers in an include
-  block of their own. Assembly isn't formatted;
+  block of their own. Assembly and `third_party/` aren't formatted, and `.clang-format-ignore`
+  keeps an editor from doing it;
 - `clang-tidy` on each C source that the build compiles, against the root `.clang-tidy`;
 - `ruff check` and `ruff format --check` on each `.py`, against `ruff.toml`, which sets only
   `line-length = 100`.
@@ -87,11 +89,11 @@ clang-tidy.
 
 Each file is checked on its own, so a second run does only what changed. Editing a header, the
 prelude or a configuration file redoes every clang-tidy check, since any source may read it.
-`make -k lint` goes on after a failure to report all of them.
+`make lint` goes on after a failure, so one run reports every file that fails.
 
 CI runs `make lint` as a job of its own, so that a style issue never stops the tests from
-running. It installs only LLVM 23 and ruff, at the versions in [`mk/versions.env`](../mk/versions.env),
-which the Makefile and the workflow both read. Locally `make lint` runs whatever is installed
+running. It installs only LLVM 23 and ruff, at the versions in
+[`mk/versions.env`](../mk/versions.env), which the Makefile and the workflow both read. Locally `make lint` runs whatever is installed
 and prints a warning, not an error, when a tool isn't the pinned version. CI is the reference.
 Only a missing tool stops it. On macOS, `llvm` provides clang-format and clang-tidy and `ruff` is
 in the `Brewfile`.
@@ -107,7 +109,8 @@ The port has a `.clang-tidy` of its own that turns off `portability-no-assembler
 else. A port is made of inline assembly, which only the port may contain, so the check has nothing
 to say there, and it is still on everywhere else.
 
-Code must also avoid statement expressions, `##__VA_ARGS__`, `{}` initialisers and recursion.
+Recursion is one of what it catches (`misc-no-recursion`, because kernel stacks are 16 KiB). Statement
+expressions, `##__VA_ARGS__` and `{}` initialisers are the compiler's job, through `-Wpedantic`.
 
 ### The compile database
 
@@ -117,8 +120,9 @@ clang adds `-Xclang -clang-vendor-feature=...` to what it records, and clang-tid
 an error. The committed `.clangd` points editors at the same file, so build once and they have it.
 
 Something that compiles C registers it in `NOVA_COMPDB`. Each subsystem does in `mk/kernel.mk`,
-with the command in `<name>.compdb` and its sources in `<name>.srcs`. Userland and the host tests
-do the same, and clang-tidy then covers them too.
+with the command in `<name>.compdb` and its sources in `<name>.srcs`, and compiles with that
+command. Userland and the host tests will do the same when they exist, and clang-tidy then covers
+them too.
 
 ## Subsystems and their boundaries
 

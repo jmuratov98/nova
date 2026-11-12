@@ -24,6 +24,8 @@
 # LD := ld.lld-23
 # OBJCOPY := llvm-objcopy-23
 # NM := llvm-nm-23
+# CLANG_FORMAT := clang-format-23
+# CLANG_TIDY := clang-tidy-23
 
 # Another Homebrew llvm, such as a pinned one:
 #

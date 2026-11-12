@@ -15,7 +15,7 @@ CLANG_TIDY ?= clang-tidy
 RUFF ?= ruff
 
 # Each of these stops with one message when a tool is missing, and warns when one isn't the pin.
-nova_check_tools = $(PYTHON) tools/check_lint_tools.py --llvm '$(LLVM_VERSION)' \
+nova_check_tools = $(PYTHON) tools/check_lint_tools.py --llvm-version '$(LLVM_VERSION)' \
     --ruff-version '$(RUFF_VERSION)' --clang-format '$(CLANG_FORMAT)' --ruff '$(RUFF)'
 
 .PHONY: lint format lint-tools format-tools
@@ -27,8 +27,9 @@ format-tools:
 # The compile database: every C source that the build compiles, with the command that compiles it,
 # written from the same variables the build's rules use. clang-tidy reads it, and so does a
 # committed .clangd for editors. A build that compiles C registers it by adding a name to
-# NOVA_COMPDB, with its command in <name>.compdb and its sources in <name>.srcs. A subsystem
-# does, in mk/kernel.mk, and userland and the host tests do the same. Names must be unique.
+# NOVA_COMPDB, with its command in <name>.compdb and its sources in <name>.srcs, and by compiling
+# with that command. A subsystem does, in mk/kernel.mk, and userland and the host tests will when
+# they exist. Names must be unique.
 ifneq ($(nova_build_goals),)
 
 COMPDB := $(BUILD)/compile_commands.json
@@ -63,12 +64,18 @@ endif
 
 ifneq ($(filter lint,$(nova_goals)),)
 
+# Go on after a failure, so that one run reports every file that fails and not only the first.
+MAKEFLAGS += -k
+
 LINT := $(BUILD)/lint
 
 # A file is checked again when it changes, and so is every file that clang-tidy analyses when what
 # it reads changes: a header (which the sources may include), the configuration, the compile
 # database or the shim of freestanding headers. The prelude is a header too.
 nova_tidy_files := $(foreach g,$(NOVA_COMPDB),$(filter %.c,$($(g).srcs)))
+ifeq ($(nova_tidy_files),)
+$(error The compile database lists no C sources, so clang-tidy would check nothing)
+endif
 nova_tidy_inputs := .clang-tidy $(filter %/.clang-tidy,$(nova_lint_files)) \
     $(filter %.h,$(nova_lint_files)) $(COMPDB) $(SHIM)/.stamp
 
