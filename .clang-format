@@ -1,0 +1,15 @@
+# Nova's C style: LLVM's, with 4-space indents and 100 columns. `make format` applies it and
+# `make lint` checks it. It covers C sources and headers, never assembly or third_party/.
+BasedOnStyle: LLVM
+IndentWidth: 4
+ColumnLimit: 100
+# Every single-statement if, for and while gets braces.
+InsertBraces: true
+
+# C17's nine freestanding headers go in a block of their own, above Nova's.
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^<(float|iso646|limits|stdalign|stdarg|stdbool|stddef|stdint|stdnoreturn)\.h>$'
+    Priority: 1
+  - Regex: '.*'
+    Priority: 2

@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  # Formatting and static analysis are a job of their own, so that a style issue never stops the
+  # tests from running. It installs only what `make lint` runs. The tool versions are the ones in
+  # mk/versions.env, which the Makefile reads too.
+  lint:
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Read the tool versions
+        run: grep -E '^[A-Z_]+=' mk/versions.env >> "$GITHUB_ENV"
+
+      # make lint runs the build's own toolchain check, so it needs clang, ld.lld, llvm-objcopy and
+      # llvm-nm as well as clang-format and clang-tidy. apt puts them in /usr/lib/llvm-N/bin
+      # under their plain names.
+      - name: Install LLVM
+        run: |
+          codename=$(. /etc/os-release && echo "$VERSION_CODENAME")
+          sudo install -d /etc/apt/keyrings
+          curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key \
+            | sudo tee /etc/apt/keyrings/apt.llvm.org.asc > /dev/null
+          echo "deb [signed-by=/etc/apt/keyrings/apt.llvm.org.asc] http://apt.llvm.org/$codename/ llvm-toolchain-$codename-$LLVM_VERSION main" \
+            | sudo tee /etc/apt/sources.list.d/llvm.list
+          sudo apt-get update
+          sudo apt-get install -y \
+            "clang-$LLVM_VERSION" "lld-$LLVM_VERSION" "llvm-$LLVM_VERSION" \
+            "clang-format-$LLVM_VERSION" "clang-tidy-$LLVM_VERSION"
+          echo "/usr/lib/llvm-$LLVM_VERSION/bin" >> "$GITHUB_PATH"
+
+      - name: Install ruff
+        run: |
+          python3 -m venv "$RUNNER_TEMP/ruff"
+          "$RUNNER_TEMP/ruff/bin/pip" install "ruff==$RUFF_VERSION"
+          echo "$RUNNER_TEMP/ruff/bin" >> "$GITHUB_PATH"
+
+      - name: Lint
+        run: make lint

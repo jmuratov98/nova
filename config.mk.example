@@ -9,6 +9,13 @@
 #   OBJCOPY llvm-objcopy
 #   NM      llvm-nm
 #   PYTHON  python3
+#
+# `make lint` and `make format` run these, also found on PATH, which includes Homebrew's llvm
+# directory on macOS. CI pins their versions in mk/versions.env, and a different one only warns.
+#
+#   CLANG_FORMAT clang-format
+#   CLANG_TIDY   clang-tidy
+#   RUFF         ruff
 
 # On Linux, apt.llvm.org installs LLVM 23 with versioned names, so name them here, or put
 # /usr/lib/llvm-23/bin on PATH, where they have their plain names:

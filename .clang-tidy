@@ -1,0 +1,45 @@
+# Nova's static analysis, which `make lint` runs over the compile database that the build writes.
+# clang-tidy is the only analyser, and its clang-analyzer-* checks are the Clang Static Analyzer.
+#
+# Every finding is an error. Fix it, or silence that one line with a NOLINT that names its check
+# and gives a reason, as in
+#
+#     x = y; // NOLINT(bugprone-foo): bar is why this is fine
+#
+# A NOLINT with no check named, or with no reason, isn't accepted in review.
+#
+# Directories can narrow this with their own .clang-tidy that sets `InheritParentConfig: true`. The
+# port's does, to turn off the check that its inline assembly can't satisfy.
+Checks: >
+  -*,
+  clang-analyzer-*,
+  bugprone-*,
+  misc-*,
+  portability-*,
+  readability-misleading-indentation,
+  readability-duplicate-include,
+  readability-inconsistent-declaration-parameter-name,
+  readability-non-const-parameter,
+  readability-redundant-declaration,
+  -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
+  -bugprone-easily-swappable-parameters,
+  -misc-include-cleaner
+
+# Why each of the checks above is off:
+#
+# clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling
+#     wants Annex K's memcpy_s and friends, which a freestanding kernel doesn't have.
+# bugprone-easily-swappable-parameters
+#     fires on every (dst, src) pair, and those are what the memory functions take.
+# misc-include-cleaner
+#     misreads the freestanding headers. On a sample file it reported every parameter as a symbol
+#     whose header was missing.
+
+WarningsAsErrors: '*'
+
+# Findings in a header are reported when the header is Nova's own: under kernel/, user/ or tests/.
+# That keeps out the compiler's freestanding headers (in the build's shim directory) and, with the
+# exclusion, anything vendored under third_party/, which Nova doesn't lint. Which sources are
+# analysed at all is what the compile database lists, and never anything under third_party/.
+HeaderFilterRegex: '(^|/)(kernel|user|tests)/'
+ExcludeHeaderFilterRegex: '(^|/)third_party/'

@@ -1,0 +1,3 @@
+# Editors read the compile database that the build writes (any build does, `make kernel` included).
+CompileFlags:
+  CompilationDatabase: build/x86_64

@@ -27,6 +27,7 @@ MAKEFLAGS += --no-builtin-rules
 include mk/tools.mk
 include mk/kernel.mk
 include mk/check.mk
+include mk/lint.mk
 
 .PHONY: all
 all: kernel
@@ -47,6 +48,8 @@ help:
 	@echo 'Targets:'
 	@echo '  kernel     build the kernel (the default target for now)'
 	@echo '  check      build the kernel, then run the fixtures'
+	@echo '  lint       check formatting, run clang-tidy and ruff (CI runs this as its own job)'
+	@echo '  format     rewrite C and Python in place to the style that lint checks'
 	@echo '  clean      remove the build output for ARCH'
 	@echo '  distclean  remove the whole build directory'
 	@echo 'Variables:'
@@ -55,4 +58,5 @@ help:
 	@echo '  WERROR=    -Werror by default, empty to turn warnings back into warnings'
 	@echo '  V=1        print each command in full'
 	@echo '  BUILD_DIR= where output goes, build by default'
-	@echo 'Per-machine settings (CC, LD, OBJCOPY, NM, PYTHON) go in config.mk.'
+	@echo 'Per-machine settings (CC, LD, OBJCOPY, NM, PYTHON) go in config.mk, and so do'
+	@echo 'CLANG_FORMAT, CLANG_TIDY and RUFF, which lint and format run.'
