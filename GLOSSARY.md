@@ -72,6 +72,10 @@ _Avoid_: M1 (fine as shorthand in conversation, but not in specs), MVP, hello wo
 An automated test that boots the boot image in QEMU and judges the run by how QEMU exits and by the lines on the serial console.
 _Avoid_: integration test, end-to-end test, smoke test, QEMU test
 
+**Outcome**:
+How a run of Nova ended, as the kernel reports it when it powers off: init exited 0, init exited non-zero, or the kernel panicked.
+_Avoid_: exit code (QEMU's number for it), result, verdict
+
 **Host test**:
 An automated test that builds one portable subsystem for the host, with fakes for its dependencies, and runs it without QEMU.
 _Avoid_: unit test (alone), native test
